@@ -1,0 +1,210 @@
+#include <iostream>
+#include <vector>
+#include <math.h>
+using namespace std;
+
+const float e = 0.0001;
+
+
+bool check_matrix(vector<vector<float>>);
+void print_matrix(vector<vector<float>>);
+void print_matrix(vector<float>);
+vector<float> fast_gauss_method(vector<vector<float>>, vector<float>);
+float determinant(vector<vector<float>>);
+vector<float> Gauss_Jordan_method(vector<vector<float>>, vector<float>);
+
+int main() {
+ setlocale(LC_ALL, "ru");
+ 
+ bool exit = false;
+ while (!exit) {
+  int number = 0;
+  cout << "Выберите алгоритм: \n1) Быстрый метод Гаусса \n2) Метод Гаусса-Жордана \n0) Выход \nВвод: ";
+  cin >> number;
+
+ if (number == 1) {
+   int rows, columns;
+   cout << "Введите число строк матрицы A: ";
+   cin >> rows;
+   cout << "Введите число столбцов матрицы A: ";
+   cin >> columns;
+   cout << "Введите матрицу: \n";
+
+   vector<vector<float>> matrix_A(rows, vector<float>(columns));
+   for (int i = 0; i < rows; i++)
+    for (int j = 0; j < columns; j++)
+     cin >> matrix_A[i][j];
+
+   cout << "Введите матрицу B: \n";
+
+   vector<float> matrix_B(rows);
+   for (int i = 0; i < rows; i++)
+    cin >> matrix_B[i];
+
+   cout << "Результат алгоритма: \n";
+   vector<float> result = fast_gauss_method(matrix_A, matrix_B);
+   if (result.size() != 0)
+    print_matrix(result);
+   else cout << "Матрица введена неверно!!!";
+   cout << "\n\n";
+  }
+  else if (number == 2) {
+   int rows, columns;
+   cout << "Введите число строк матрицы A: ";
+   cin >> rows;
+   cout << "Введите число столбцов матрицы A: ";
+   cin >> columns;
+   cout << "Введите матрицу: \n";
+
+   vector<vector<float>> matrix_A(rows, vector<float>(columns));
+   for (int i = 0; i < rows; i++)
+    for (int j = 0; j < columns; j++)
+     cin >> matrix_A[i][j];
+
+   cout << "Введите матрицу B: \n";
+
+   vector<float> matrix_B(rows);
+   for (int i = 0; i < rows; i++)
+    cin >> matrix_B[i];
+
+   cout << "Результат алгоритма: \n";
+   vector<float> result = Gauss_Jordan_method(matrix_A, matrix_B);
+   if (result.size() != 0)
+    print_matrix(result);
+   else cout << "Матрица введена неверно!!!";
+   cout << "\n\n";
+  }
+  else if (number == 0)
+   exit = true;
+  else
+   cout << "Такого номера нет!!!\n\n";
+ }
+}
+
+vector<float> Gauss_Jordan_method(vector<vector<float>> A, vector<float> B) {
+ int n = A.size();
+ int m = A[0].size() - 1;
+
+ vector<int> where(m, -1);
+ for (int col = 0, row = 0; col < m && row < n; ++col) {
+  int sel = row;
+  for (int i = row; i < n; ++i)
+   if (abs(A[i][col]) > abs(A[sel][col]))
+    sel = i;
+  if (abs(A[sel][col]) < e)
+   continue;
+  for (int i = col; i <= m; ++i)
+   swap(A[sel][i], A[row][i]);
+  where[col] = row;
+
+  for (int i = 0; i < n; ++i)
+   if (i != row) {
+    double c = A[i][col] / A[row][col];
+    for (int j = col; j <= m; ++j)
+     A[i][j] -= A[row][j] * c;
+   }
+  ++row;
+ }
+
+ B.assign(m, 0);
+ for (int i = 0; i < m; ++i)
+  if (where[i] != -1)
+   B[i] = A[where[i]][m] / A[where[i]][i];
+ for (int i = 0; i < n; ++i) {
+  double sum = 0;
+  for (int j = 0; j < m; ++j)
+   sum += B[j] * A[i][j];
+ }
+
+ return B;
+}
+
+
+vector<float> fast_gauss_method(vector<vector<float>> A, vector<float> B) {
+ vector<float> x(A.size());
+ float max;
+ int k, index;
+ k = 0;
+ while (k < A.size()) {
+  // Поиск строки с максимальным a[i][k]
+  max = abs(A[k][k]);
+  index = k;
+  for (int i = k + 1; i < A.size(); i++)
+  {
+   if (abs(A[i][k]) > max)
+   {
+    max = abs(A[i][k]);
+    index = i;
+   }
+  }
+  // Перестановка строк
+  if (max < e)
+  {
+   // нет ненулевых диагональных элементов
+   cout << "Решение получить невозможно из-за нулевого столбца ";
+   cout << index << " матрицы A" << endl;
+   return vector<float>();
+  }
+  for (int j = 0; j < A.size(); j++)
+  {
+   double temp = A[k][j];
+   A[k][j] = A[index][j];
+   A[index][j] = temp;
+  }
+  float temp = B[k];
+  B[k] = B[index];
+  B[index] = temp;
+  // Нормализация уравнений
+  for (int i = k; i < A.size(); i++)
+  {
+   float temp = A[i][k];
+   if (abs(temp) < e) continue; // для нулевого коэффициента пропустить
+   for (int j = 0; j < A.size(); j++)
+    A[i][j] = A[i][j] / temp;
+   B[i] = B[i] / temp;
+   if (i == k)  continue; // уравнение не вычитать само из себя
+   for (int j = 0; j < A.size(); j++)
+    A[i][j] = A[i][j] - A[k][j];
+   B[i] = B[i] - B[k];
+  }
+  k++;
+ }
+ // обратная подстановка
+ for (k = A.size() - 1; k >= 0; k--)
+ {
+  x[k] = B[k];
+  for (int i = 0; i < k; i++)
+   B[i] = B[i] - A[i][k] * x[k];
+ }
+ return x;
+}
+
+
+float determinant(vector<vector<float>> matrix) {
+ float temp = 0;
+ 
+ for (int k = 0; k < matrix.size() - 1; k++)
+  for (int i = k + 1; i < matrix.size(); i++) {
+   temp = -matrix[i][k] / matrix[k][k];
+   for (int j = 0; j < matrix.size(); j++)
+    matrix[i][j] += matrix[k][j] * temp;
+  }
+ 
+ float d = 1;
+ for (int i = 0; i < matrix.size(); i++)
+  d *= matrix[i][i];
+
+ return d;
+}
+
+void print_matrix(vector<vector<float>> matrix) {
+ for (int i = 0; i < matrix.size(); i++) {
+  for (int k = 0; k < matrix[i].size(); k++)
+   cout << matrix[i][k] << " ";
+  cout << endl;
+ }
+}
+void print_matrix(vector<float> matrix) {
+ for (int i = 0; i < matrix.size(); i++)
+  cout << matrix[i] << " ";
+}
